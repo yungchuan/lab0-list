@@ -28,7 +28,6 @@ queue_t *q_new()
     if (!q)
         return q;
     q->head = NULL;
-    q->tail = NULL;
     q->size = 0;
     return q;
 }
@@ -69,9 +68,15 @@ bool q_insert_head(queue_t *q, char *s)
         return false;
     }
     strcpy(newh->value, s);
-    if (q->head == NULL)
-        q->tail = newh;
-    newh->next = q->head;
+
+    if(q->head == NULL)
+        newh->next = newh;
+    else{
+        newh->next = q->head;
+        newh->perv = newh->next->perv;
+    }
+    newh->next->perv = newh;
+    newh->perv->next = NULL;
     q->head = newh;
     q->size += 1;
     return true;
@@ -99,8 +104,14 @@ bool q_insert_tail(queue_t *q, char *s)
         return false;
     }
     strcpy(newt->value, s);
-    q->tail->next = newt;
-    q->tail = newt;
+    
+    if(q->head == NULL)
+        q->head = newt;
+    else{
+        newt->perv = q->head->perv;
+        newt->perv->next = newt;
+    }
+    q->head->perv = newt;
     newt->next = NULL;
     q->size += 1;
     return true;
@@ -119,9 +130,9 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
     if (!q || !(q->head))
         return false;
     list_ele_t *node = q->head;
+    if(q->head->next)
+        q->head->next->perv = q->head->perv;
     q->head = q->head->next;
-    if (!(q->head))
-        q->tail = NULL;
     if (sp) {
         strncpy(sp, node->value, bufsize - 1);
         sp[bufsize - 1] = '\0';
@@ -154,7 +165,7 @@ void q_reverse(queue_t *q)
 {
     if (!q || !(q->head) || !(q->head->next))
         return;
-    list_ele_t *pre_node, *nxt_node;
+    /*list_ele_t *pre_node, *nxt_node;
     q->tail = q->head;
     nxt_node = q->head->next;
     do {
@@ -163,5 +174,13 @@ void q_reverse(queue_t *q)
         nxt_node = q->head->next;
         q->head->next = pre_node;
     } while (nxt_node);
-    q->tail->next = NULL;
+    q->tail->next = NULL;*/
+    for(list_ele_t *node = q->head; node != NULL; node = node->perv){
+        list_ele_t *tmp = node->next;
+        node->next = node->perv;
+        node->perv = tmp;
+    }
+    q->head->next->perv = q->head;
+    q->head = q->head->next;
+    q->head->perv->next = NULL;
 }
